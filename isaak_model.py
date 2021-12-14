@@ -61,9 +61,24 @@ def birch_murnaghan_3rd_order_bulk_modulus(K0, K0_prime, P):
     """
     return K0 + (K0_prime * P)
 
-volumes = np.arange(4, 7 + 0.1, 0.1)
-fig, axs = plt.subplots(1, 3, figsize=(16, 9), sharex='all', gridspec_kw={"wspace": 0.20})
-ax1, ax2, ax3 = axs.flatten()
+def bulk_modulus(volumes):
+    """
+    K = -V (dP/dV)_T
+    :param volumes:
+    :return:
+    """
+    K = []
+    for index, volume in enumerate(volumes):
+        if index > 0:
+            dV = volume - volumes[index - 1]
+            dP = birch_murnaghan_3rd_order(V=volume, V0=6.73, K0=155.8, K0_prime=5.81) - birch_murnaghan_3rd_order(
+                V=volumes[index - 1], V0=6.73, K0=155.8, K0_prime=5.81)
+            K.append(-volume * (dP / dV))
+    return K
+
+volumes = np.arange(3.9, 7 + 0.1, 0.1)
+fig, axs = plt.subplots(1, 4, figsize=(16, 9), sharex='all', gridspec_kw={"wspace": 0.20})
+ax1, ax2, ax3, ax4 = axs.flatten()
 ax1.plot(
     volumes,
     [vibrational_gruneisen(V) for V in volumes],
@@ -78,12 +93,18 @@ ax3.plot(
     volumes,
     [birch_murnaghan_3rd_order(V=V, V0=6.73, K0=155.8, K0_prime=5.81) for V in volumes]
 )
+ax4.plot(
+    volumes[1:],
+    bulk_modulus(volumes)
+)
 ax1.set_title("Vibrational Gruneisen Parameter")
 ax1.set_ylabel("Gamma")
 ax2.set_title("Fitted Debye Temperature")
 ax2.set_ylabel("Theta")
 ax3.set_title("3rd Order Birch-Murnaghan EoS")
 ax3.set_ylabel("Pressure (GPa)")
+ax4.set_title("3rd Order Birch-Murnaghan EoS")
+ax3.set_ylabel("Bulk Modulus (GPa)")
 for ax in axs.flatten():
     ax.set_xlabel("Volume (cm^3 mol^-1)")
     ax.grid(alpha=0.4)
@@ -99,6 +120,14 @@ def P_th(deltaT):
 def P_0(V, T=300):
     return 0
 
+def pressure():
+    """
+    From Anderson et al. 2003
+    https://reader.elsevier.com/reader/sd/pii/S0921452602018586?token=79DF393A37E61505739170DECD664BC38CDC50155A39DCBD0C05FE3B0A43813A5204D17AEABEAB9914D8706505BB487B&originRegion=us-east-1&originCreation=20211214012248
+    P(V, T) = P_0 (V, 3000) + P_th (T)
+    :return:
+    """
+
 def T_P_EoS(deltaT):
     """
     P (V,T) = P_0 (V, 300 K) + P_TH (T)
@@ -107,13 +136,24 @@ def T_P_EoS(deltaT):
     """
     return P_0(0) + P_th(deltaT)
 
-# volume dependence of parameters of HPC iron at 300K
-test_data_table1 = {
-    "V": 5.90,  # cm/mol
-    "P": 30,  # GPa
-    "K_T": 319,  # GPa,
-    "alpha": 3.88,  # 10^-5 K^-1
-    "alpha * K_T": 12.4,  # 10^-3 GPa/K
-    "debye_T": 524,  # K
-    "gruniesen": 1.72,
-}
+
+delta_t = [
+    (300, 1000),
+    [1000, 2000],
+    [2000, 3000],
+    [3000, 4000],
+    [4000, 5000],
+    [5000, 6000],
+    [6000, 7000]
+]
+
+for dT_range in delta_t:
+    dT = dT_range[1] - dT_range[0]
+    p = P_th(deltaT=dT)
+    deltaP_deltaT = p / dT
+
+
+
+
+
+
