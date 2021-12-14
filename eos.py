@@ -83,6 +83,12 @@ for T2 in temperatures:
     found_alphas.append(candidate_alpha * 10 ** 5)
     v2s.append(candidate_v2)
 
+v2s = []
+T2 = 4000
+for alpha in alphas:
+    v2 = expanded_volume(V1=v1, T1=T2, T2=T2, assumed_alpha=alpha)
+    P = pressure(V=v2, deltaT=T2 - 300)
+
 
 fig = plt.figure(figsize=(16, 9))
 ax = fig.add_subplot(111)
