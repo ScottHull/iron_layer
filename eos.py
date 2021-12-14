@@ -50,52 +50,50 @@ def get_v_from_isotherm(T, target_P):
     :return:
     """
     volumes = list(np.arange(3.9, 7 + 0.1, 0.1))
-    isobar = [pressure(V=V, deltaT=(T - 300)) for V in volumes]
+    isotherm = [pressure(V=V, deltaT=(T - 300)) for V in volumes]
     min_val = 1e10
     target_V = None
-    for index, i in enumerate(isobar):
+    for index, i in enumerate(isotherm):
         test = abs(i - target_P)
         if test < min_val:
             min_val = test
             target_V = volumes[index]
     return target_V
 
+volumes = np.arange(3.9, 7 + 0.1, 0.1)
 alphas = np.arange(1e-6, 5e-5, 1e-6)
-temperatures = np.arange(1000, 8000, 1000)
-pres = []
-v2s = []
-target_P = 181.7
-v1 = 0.68
-T1 = 300
+temperatures = [300] + list(np.arange(1000, 8000, 1000))
+target_P = 160
+vs = []
+isotherms = []
 found_alphas = []
-for T2 in temperatures:
-    target_v = get_v_from_isotherm(T=T2, target_P=target_P)
-    candidate_alpha = 1e99
-    candidate_v2 = 1e99
-    min_diff = 1e99
+for T in temperatures[1:]:
+    isotherm = [pressure(V=V, deltaT=(T - 300)) for V in volumes]
+    isotherms.append(isotherm)
+    test_alpha = None
+    test_v = None
+    v = get_v_from_isotherm(T=T, target_P=target_P)
+    min_test = 1e99
     for alpha in alphas:
-        v2 = expanded_volume(V1=v1, assumed_alpha=alpha, T1=T1, T2=T2)
-        test = abs(v2 - target_v)
-        if test < min_diff:
-            candidate_alpha = alpha
-            candidate_v2 = v2
-            min_diff = test
-    found_alphas.append(candidate_alpha * 10 ** 5)
-    v2s.append(candidate_v2)
-
-v2s = []
-T2 = 4000
-for alpha in alphas:
-    v2 = expanded_volume(V1=v1, T1=T2, T2=T2, assumed_alpha=alpha)
-    P = pressure(V=v2, deltaT=T2 - 300)
-
+        expanded_v = expanded_volume(V1=get_v_from_isotherm(T=temperatures[0], target_P=target_P), T1=temperatures[0], T2=T, assumed_alpha=alpha)
+        if abs(expanded_v - v) < min_test:
+            test_v = v
+            min_test = abs(expanded_v - v)
+            test_alpha = alpha
+    vs.append(test_v)
+    found_alphas.append(test_alpha * 10 ** 5)
+    print(T, test_v, test_alpha)
 
 fig = plt.figure(figsize=(16, 9))
 ax = fig.add_subplot(111)
 ax.plot(
-    temperatures,
+    temperatures[1:],
     found_alphas,
-    linewidth=2.0
+    linewidth=2.0,
+    label=target_P,
 )
+ax.set_xlabel("Temperature"), ax.set_ylabel("Alpha")
+ax.grid(alpha=0.4)
 
 plt.show()
+
