@@ -104,7 +104,7 @@ ax2.set_ylabel("Theta")
 ax3.set_title("3rd Order Birch-Murnaghan EoS")
 ax3.set_ylabel("Pressure (GPa)")
 ax4.set_title("3rd Order Birch-Murnaghan EoS")
-ax3.set_ylabel("Bulk Modulus (GPa)")
+ax4.set_ylabel("Bulk Modulus (GPa)")
 for ax in axs.flatten():
     ax.set_xlabel("Volume (cm^3 mol^-1)")
     ax.grid(alpha=0.4)
@@ -118,39 +118,45 @@ def P_th(deltaT):
     return (a * deltaT) + (0.5 * b * (deltaT ** 2))
 
 def P_0(V, T=300):
-    return 0
+    """
+    Iron at 300K as the "cold state" pressure.
+    :param V:
+    :param T:
+    :return:
+    """
+    return birch_murnaghan_3rd_order(V=V, V0=6.73, K0=155.8, K0_prime=5.81)
 
-def pressure():
+def pressure(V, deltaT):
     """
     From Anderson et al. 2003
     https://reader.elsevier.com/reader/sd/pii/S0921452602018586?token=79DF393A37E61505739170DECD664BC38CDC50155A39DCBD0C05FE3B0A43813A5204D17AEABEAB9914D8706505BB487B&originRegion=us-east-1&originCreation=20211214012248
+    The P-V-T EoS used for finding thermal expansion.
     P(V, T) = P_0 (V, 3000) + P_th (T)
     :return:
     """
+    return P_0(V) + P_th(deltaT)
 
-def T_P_EoS(deltaT):
-    """
-    P (V,T) = P_0 (V, 300 K) + P_TH (T)
-    :param deltaT:
-    :return:
-    """
-    return P_0(0) + P_th(deltaT)
+def integrate_thermal_expansivity(volume, deltaT, assumed_alpha):
+    deltaV = assumed_alpha * volume * deltaT
+    return deltaV
 
 
-delta_t = [
-    (300, 1000),
-    [1000, 2000],
-    [2000, 3000],
-    [3000, 4000],
-    [4000, 5000],
-    [5000, 6000],
-    [6000, 7000]
-]
-
-for dT_range in delta_t:
-    dT = dT_range[1] - dT_range[0]
-    p = P_th(deltaT=dT)
-    deltaP_deltaT = p / dT
+fig = plt.figure(figsize=(16, 9))
+ax = fig.add_subplot(111)
+for T in np.arange(1000, 7000 + 1000, 1000):
+    dT = T - 300  # T0 = 300K, the reference temperature
+    p = [pressure(V=V, deltaT=dT) for V in volumes]
+    ax.plot(
+        volumes,
+        p,
+        linewidth=2.0,
+        label="{} K isotherm".format(T)
+    )
+ax.set_xlabel("Volume")
+ax.set_ylabel("P(V)")
+ax.grid(alpha=0.4)
+ax.legend()
+plt.show()
 
 
 
